@@ -5,7 +5,7 @@
 
 #include <list>
 
-std::list<char *> mem_allocations;
+static std::list<char *> mem_allocations;
 
 static const char *char_table = "abcdefghijklmnopqrstuvwxyz0123456789";
 static int char_table_length;
