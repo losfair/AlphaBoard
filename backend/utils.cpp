@@ -7,10 +7,10 @@
 
 std::list<char *> mem_allocations;
 
-const char *char_table = "abcdefghijklmnopqrstuvwxyz0123456789";
-int char_table_length;
+static const char *char_table = "abcdefghijklmnopqrstuvwxyz0123456789";
+static int char_table_length;
 
-bool debug_on = false;
+static bool debug_on = false;
 
 extern "C" void init() {
     char_table_length = strlen(char_table);
@@ -53,6 +53,6 @@ extern "C" void free_memory() {
     if(debug_on) {
         printf("%d references freed.\n",free_count);
     }
-    
+
     mem_allocations.clear();
 }
