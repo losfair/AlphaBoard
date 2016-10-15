@@ -1,0 +1,32 @@
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="ViewPort" content="initial-scale=1, minimum-scale=1, width=device-width"/>
+        <title>AlphaBoard</title>
+        <link rel="stylesheet" href="index.css" />
+        <script src="jquery-3.1.1.min.js"></script>
+        <script src="index.min.js"></script>
+    </head>
+    <body>
+        <canvas id="drawing" width="100%" height="100%"></canvas>
+        <div id="options">
+            <div onclick="lineMode='straight'">直线</div>
+            <div onclick="lineMode='any'">任意线</div>
+            <div onclick="lineMode='rect'">矩形</div>
+            <div onclick="lineMode='circle'">圆</div>
+            <div onclick="resetEverything()">重置</div>
+            <div onclick="commitActions()">提交</div>
+            <div onclick="cancelStep()">撤销</div>
+            <div onclick="commitAndShare()">分享</div>
+            <div onclick="toggleActionList()">操作列表</div>
+            <div onclick="switchFullScreen()">全屏</div>
+        </div>
+        <div id="last-commit">上次提交: <code id="last-commit-id">root</code></div>
+        <div id="action-list">
+            <div id="action-list-title">操作列表</div>
+            <table id="action-list-content"></table>
+            <div id="action-list-cancel-button" onclick="cancelActionsInList()">撤销操作</div>
+        </div>
+        <div id="cover-div"></div>
+    </body>
+</html>
