@@ -36,12 +36,23 @@ def onFetch():
         resp.set_data("Bad request")
         return resp
     
+    retData = "";
+    
     targetData = targetDb.commits.find_one({"token": targetCommitToken})
     if targetData == None:
         resp.set_data("Not found")
         return resp
     
-    resp.set_data(targetData["actions"])
+    retData = targetData["actions"]
+
+    while targetData["parent"] != "root":
+        targetData = targetDb.commits.find_one({"token": targetData["parent"]})
+        if targetData == None:
+            resp.set_data("Not found")
+            return resp
+        retData += "\n" + targetData["actions"]
+    
+    resp.set_data(retData)
     return resp
 
 @app.route("/commit", methods=["POST"])
@@ -63,12 +74,14 @@ def onCommit():
 
     if parentCommit == None or actions == None or type(parentCommit) != unicode or type(actions) != list:
         resp.set_data("Failed")
-        print(type(parentCommit))
         return resp
-    
+
     if parentCommit != "root":
-        resp.set_data("Not implemented")
-        return resp
+        parentCommitItem = targetDb.commits.find_one({"token": parentCommit})
+
+        if parentCommitItem == None:
+            resp.set_data("Parent commit not found")
+            return resp
     
     newToken = utils.get_random_string(8)
     utils.free_memory();

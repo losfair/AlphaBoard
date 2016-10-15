@@ -10,6 +10,9 @@ var currentPath = [];
 var paths = [];
 
 var actions = [];
+var new_actions = [];
+
+var parentCommit = "root";
 
 var drawingDisabled = false;
 
@@ -108,11 +111,7 @@ function clearCanvas() {
 
 function resetEverything(noLog) {
     if(!noLog) {
-        actions.push({
-            "id": randomNumeric(),
-            "actionType": "reset",
-            "objectType": ""
-        });
+        addAction("reset","");
     }
 
     paths = [];
@@ -149,9 +148,38 @@ function getActions() {
     return JSON.stringify(actions);
 }
 
-function loadActions(ats) {
-    actions = ats;
+function loadActions(ats, noReset) {
+    if(noReset) {
+        for(var i in ats) {
+            var currAction = ats[i];
+            if(currAction.actionType == "cancel") {
+                for(var j=0; j<actions.length; j++) {
+                    if(actions[j].id == currAction.targetId) {
+                        //console.log("Canceling action");
+                        actions.splice(j,1);
+                        break;
+                    }
+                }
+                for(var j=0; j<ats.length; j++) {
+                    if(ats[j].id == currAction.targetId) {
+                        //console.log("Canceling action");
+                        ats.splice(j,1);
+                        break;
+                    }
+                }
+                ats.splice(i,1);
+            }
+        }
+
+        for(var id in ats) {
+            actions.push(ats[id]);
+        }
+    } else {
+        actions = ats;
+    }
+
     paths = [];
+
     for(var i in actions) {
         var currAction = actions[i];
         console.log("Loading action "+currAction.id);
@@ -162,14 +190,14 @@ function loadActions(ats) {
                         paths.push(currAction.points);
                         break;
                     default:
-                        throw "Unknown object type "+currAction.objectType;
+                        console.log("Unknown object type "+currAction.objectType);
                 }
                 break;
             case "reset":
                 resetEverything(true);
                 break;
             default:
-                throw "Unknown action type "+currAction.actionType;
+                console.log("Unknown action type "+currAction.actionType);
         }
     }
     renderAllPaths();
@@ -177,28 +205,73 @@ function loadActions(ats) {
 
 function loadActionsFromServer(commitToken) {
     $.post(serverAddr+"/fetch",commitToken,function(resp) {
-        if(resp == "Failed") return;
-        loadActions(JSON.parse(resp));
+        if(resp == "Failed" || resp[0] != '[') return;
+
+        var parts = resp.split("\n");
+        actions = [];
+
+        for(var i = parts.length-1; i >= 0; i--) loadActions(JSON.parse(parts[i]), true);
+
+        parentCommit = commitToken;
+
         $("#last-commit-id").html(commitToken);
     });
 }
 
 function cancelStep() {
     if(actions.length == 0) return;
-    actions.pop();
+    cancelAction(actions[actions.length-1].id);
     clearCanvas();
     loadActions(actions);
 }
 
+function addAction(actionType, objectType, details) {
+    var actionId = randomNumeric();
+
+    var actionDetails = {
+        "id": actionId,
+        "actionType": actionType,
+        "objectType": objectType
+    }
+
+    if(details) {
+        for(key in details) {
+            actionDetails[key] = details[key];
+        }
+    }
+
+    if(actionType != "cancel") actions.push(actionDetails);
+
+    new_actions.push(actionDetails);
+
+    return actionId;
+}
+
+function cancelAction(actionId) {
+    for(var i in actions) {
+        if(actions[i].id == actionId) {
+            actions.splice(i,1);
+            addAction("cancel","action",{
+                "targetId": actionId
+            });
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function commitActions(callback) {
     $.post(serverAddr+"/commit",JSON.stringify({
-        "parentCommit": "root",
-        "actions": actions
+        "parentCommit": parentCommit,
+        "actions": new_actions
     }),function(resp) {
         if(resp=="Failed" || resp.length != 8) {
             alert("提交失败。");
             return;
         }
+        parentCommit = resp;
+        new_actions = [];
         $("#last-commit-id").html(resp);
         setCookie("AlphaBoard-Last-Commit-Id",resp,30);
         if(callback) callback(resp);
@@ -245,12 +318,8 @@ function cancelActionsInList() {
     var children = $("#action-list-content").children("tr");
     for(var i=0; i<children.length; i++) {
         if(children[i].isSelected) {
-            for(var j=0; j<actions.length; j++) {
-                if(actions[j].id == children[i].actionId) {
-                    actions.splice(j,1);
-                    break;
-                }
-            }
+            cancelAction(children[i].actionId);
+            break;
         }
     }
     updateActionList();
@@ -452,10 +521,7 @@ function drawEnd() {
 
     if(lineMode == "straight") {
         paths.push([currentPath[0],currentPath[currentPath.length - 1]]);
-        actions.push({
-            "id": randomNumeric(),
-            "actionType": "new",
-            "objectType": "path",
+        addAction("new","path",{
             "desc": "直线",
             "points": [currentPath[0],currentPath[currentPath.length - 1]]
         });
@@ -466,10 +532,7 @@ function drawEnd() {
         var ptB = [startPt[0], endPt[1]];
         var targetPath = [startPt,ptA,endPt,ptB,startPt];
         paths.push(targetPath);
-        actions.push({
-            "id": randomNumeric(),
-            "actionType": "new",
-            "objectType": "path",
+        addAction("new","path",{
             "desc": "矩形",
             "points": targetPath
         });
@@ -488,19 +551,13 @@ function drawEnd() {
 
         paths.push(targetPath);
 
-        actions.push({
-            "id": randomNumeric(),
-            "actionType": "new",
-            "objectType": "path",
+        addAction("new","path",{
             "desc": "圆",
             "points": targetPath
-        })
+        });
     } else {
         paths.push(currentPath);
-        actions.push({
-            "id": randomNumeric(),
-            "actionType": "new",
-            "objectType": "path",
+        addAction("new","path",{
             "points": currentPath
         });
     }
