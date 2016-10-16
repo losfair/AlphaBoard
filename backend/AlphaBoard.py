@@ -43,7 +43,9 @@ def onFetch():
     }
     
     retArr = []
-    
+
+    cancelIds = []
+
     while targetData["parent"] != "root":
         targetData = targetDb.commits.find_one({"token": targetData["parent"]})
         if targetData == None:
@@ -67,10 +69,22 @@ def onFetch():
             if newAction.has_key("actionType") == False:
                 resp.set_data("Bad action type")
                 return resp
+
+            if newAction.has_key("id") == False:
+                resp.set_data("Id required")
+                return resp
+            
+            if newAction["id"] in cancelIds:
+                continue
             
             if newAction["actionType"] == "reset":
                 isReset = True
                 break
+            elif newAction["actionType"] == "cancel":
+                if newAction.has_key("targetId") == False:
+                    resp.set_data("No targetId provided for cancellation")
+                    return resp
+                cancelIds.append(newAction["targetId"])
             else:
                 retArr.append(newAction)
         
