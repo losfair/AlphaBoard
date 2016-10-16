@@ -38,19 +38,48 @@ def onFetch():
     
     retData = "";
     
-    targetData = targetDb.commits.find_one({"token": targetCommitToken})
-    if targetData == None:
-        resp.set_data("Not found")
-        return resp
+    targetData = {
+        "parent": targetCommitToken
+    }
     
-    retData = targetData["actions"]
-
+    retArr = []
+    
     while targetData["parent"] != "root":
         targetData = targetDb.commits.find_one({"token": targetData["parent"]})
         if targetData == None:
             resp.set_data("Not found")
             return resp
-        retData += "\n" + targetData["actions"]
+
+        targetActions = json.loads(targetData["actions"])
+        if targetActions == None or type(targetActions) != list:
+            resp.set_data("Unable to parse actions")
+            return resp
+
+        targetActions.reverse();
+
+        isReset = False
+        
+        for newAction in targetActions:
+            if type(newAction) != dict:
+                resp.set_data("Bad action data type")
+                return resp
+            
+            if newAction.has_key("actionType") == False:
+                resp.set_data("Bad action type")
+                return resp
+            
+            if newAction["actionType"] == "reset":
+                isReset = True
+                break
+            else:
+                retArr.append(newAction)
+        
+        if isReset:
+            break
+
+    retArr.reverse();
+
+    retData = json.dumps(retArr)
     
     resp.set_data(retData)
     return resp

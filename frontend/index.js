@@ -13,6 +13,7 @@ var actions = [];
 var new_actions = [];
 
 var parentCommit = "root";
+var commitHistory = ["root"];
 
 var drawingDisabled = false;
 
@@ -207,12 +208,15 @@ function loadActionsFromServer(commitToken) {
     $.post(serverAddr+"/fetch",commitToken,function(resp) {
         if(resp == "Failed" || resp[0] != '[') return;
 
-        var parts = resp.split("\n");
+        /*var parts = resp.split("\n");
         actions = [];
 
-        for(var i = parts.length-1; i >= 0; i--) loadActions(JSON.parse(parts[i]), true);
+        for(var i = parts.length-1; i >= 0; i--) loadActions(JSON.parse(parts[i]), true);*/
+
+        loadActions(JSON.parse(resp));
 
         parentCommit = commitToken;
+        commitHistory.push(commitToken);
 
         $("#last-commit-id").html(commitToken);
     });
@@ -271,6 +275,7 @@ function commitActions(callback) {
             return;
         }
         parentCommit = resp;
+        commitHistory.push(resp);
         new_actions = [];
         $("#last-commit-id").html(resp);
         setCookie("AlphaBoard-Last-Commit-Id",resp,30);
@@ -310,6 +315,7 @@ function toggleActionList() {
         drawingDisabled = false;
         $("#cover-div").unbind("click");
         $("#action-list").fadeOut();
+        $("#commit-list").fadeOut();
         $("#cover-div").fadeOut();
     }
 }
@@ -376,6 +382,38 @@ function updateActionList() {
         });
 
         actionList.appendChild(newElement);
+    }
+}
+
+function showCommitList() {
+    updateCommitList();
+    $("#action-list").fadeOut();
+    $("#commit-list").fadeIn();
+}
+
+function updateCommitList() {
+    var commitList = document.getElementById("commit-list-content");
+    commitList.innerHTML = "";
+    for(var id = commitHistory.length - 1; id >= 0; id--) {
+        var item = commitHistory[id];
+
+        var newElement = document.createElement("tr");
+        newElement.innerHTML = item;
+        newElement.commitId = item;
+
+        $(newElement).click(function(e) {
+            if(e.target.isSelected) {
+                $(e.target).css("background","none");
+                $(e.target).css("color","#FFFFFF");
+                e.target.isSelected = false;
+            } else {
+                $(e.target).css("background-color","#FFFFFF");
+                $(e.target).css("color","#000000");
+                e.target.isSelected = true;
+            }
+        });
+
+        commitList.appendChild(newElement);
     }
 }
 

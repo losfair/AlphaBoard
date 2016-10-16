@@ -22,10 +22,16 @@
             <div onclick="switchFullScreen()">全屏</div>
         </div>
         <div id="last-commit">上次提交: <code id="last-commit-id">root</code></div>
-        <div id="action-list">
-            <div id="action-list-title">操作列表</div>
-            <table id="action-list-content"></table>
+        <div id="action-list" class="sidebar">
+            <div id="action-list-title" class="sidebar-title">操作列表</div>
+            <table id="action-list-content" class="sidebar-content"></table>
             <div id="action-list-cancel-button" onclick="cancelActionsInList()">撤销操作</div>
+            <div id="action-list-show-commits" onclick="showCommitList()">显示提交列表</div>
+        </div>
+        <div id="commit-list" class="sidebar">
+            <div id="commit-list-title" class="sidebar-title">提交记录</div>
+            <table id="commit-list-content" class="sidebar-content"></table>
+            <div id="commit-list-goto-button" onclick="">回滚提交</div>
         </div>
         <div id="cover-div"></div>
     </body>
