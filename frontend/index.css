@@ -25,11 +25,22 @@ body {
 
 #last-commit {
     position: fixed;
-    bottom: 0px;
+    top: 0px;
     right: 20px;
     width: 200px;
     height: 50px;
     text-align: right;
+    line-height: 50px;
+    color: #999999;
+}
+
+#cloud-status {
+    position: fixed;
+    top: 0px;
+    left: 20px;
+    width: 200px;
+    height: 50px;
+    text-align: left;
     line-height: 50px;
     color: #999999;
 }
@@ -47,6 +58,32 @@ body {
     line-height: 100%;
     text-align: center;
     display: none;
+}
+
+.cover-layer {
+    z-index: 200;
+    background-color: #000000;
+    opacity: 0.5;
+    -webkit-opacity: 0.5;
+    position: fixed;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+}
+
+.msg-box {
+    z-index: 201;
+    position: fixed;
+    width: 100%;
+    max-width: 300px;
+    min-width: 200px;
+    min-height: 100px;
+    background-color: #0066CC;
+    color: #FFFFFF;
+    box-shadow: 0 0 20px #0066CC;
+    padding: 10px 10px;
+
 }
 
 #options div {
@@ -93,6 +130,12 @@ body {
 }
 
 #action-list-show-commits {
+    margin-top: 15px;
+    font-size: 12px;
+    color: #FFFFFF;
+}
+
+#action-list-load-commit {
     margin-top: 15px;
     font-size: 12px;
     color: #FFFFFF;

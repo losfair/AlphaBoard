@@ -5,6 +5,8 @@ var isDrawing = false;
 
 var lineMode = "any"; // "any", "straight"
 
+var lineWidth = 3;
+
 var currentPath = [];
 
 var paths = [];
@@ -19,12 +21,38 @@ var drawingDisabled = false;
 
 var isSticky = true;
 
-var stickyRadius = 5;
+var stickyRadius = 20;
 
 var coverLayer;
 var coverCxt;
 
-const serverAddr = "http://192.168.2.107:6095";
+var serverAddr = "http://192.168.2.107:6095";
+
+function isInNode() {
+    try {
+        var fs = require("fs");
+        if(!fs) return false;
+    } catch(e) {
+        return false;
+    }
+    return true;
+}
+
+function loadLocalConfig() {
+    var fs = require("fs");
+    var process = require("process");
+    var path = require("path");
+
+    var targetFile = path.dirname(process.execPath) + "/config.json";
+    var cfgText = fs.readFileSync(targetFile);
+    if(!cfgText) throw "配置文件加载失败。";
+
+    var cfgData = JSON.parse(cfgText);
+
+    if(cfgData.serverAddr) serverAddr = cfgData.serverAddr;
+    if(cfgData.stickyRadius) stickyRadius = cfgData.stickyRadius;
+    if(cfgData.lineWidth) lineWidth = cfgData.lineWidth;
+}
 
 function toggleFullScreen() {
   if ((document.fullScreenElement && document.fullScreenElement !== null) ||    
@@ -91,6 +119,31 @@ function randomNumeric() {
     return str;
 }
 
+function showPopup(msg) {
+    var coverLayer = document.createElement("div");
+    coverLayer.className = "cover-layer";
+
+    var msgBox = document.createElement("div");
+    msgBox.className = "msg-box";
+    msgBox.innerHTML = msg;
+
+    var prevDrawingDisabled = drawingDisabled;
+
+    drawingDisabled = true;
+
+    $(msgBox).click(function() {
+        document.body.removeChild(coverLayer);
+        document.body.removeChild(msgBox);
+        drawingDisabled = prevDrawingDisabled;
+    });
+
+    document.body.appendChild(coverLayer);
+    document.body.appendChild(msgBox);
+
+    $(msgBox).css("top", $(document).height() / 2 - $(msgBox).height() / 2);
+    $(msgBox).css("left", $(document).width() / 2 - $(msgBox).width() / 2);
+}
+
 function clearCanvas() {
     cvsHeight = document.getElementById("drawing").height;
     cvsWidth = document.getElementById("drawing").width;
@@ -108,6 +161,8 @@ function clearCanvas() {
 
     drawingCxt.fillStyle = "#FFFFFF";
     drawingCxt.strokeStyle = "#FFFFFF";
+
+    drawingCxt.lineWidth = lineWidth;
 }
 
 function resetEverything(noLog) {
@@ -444,12 +499,54 @@ function startCheckResize() {
     },500);
 }
 
+function promptForLoadCommit() {
+    var targetCommitId = prompt("输入要加载的提交 ID: ");
+    if(targetCommitId) {
+        console.log(targetCommitId);
+        loadActionsFromServer(targetCommitId);
+        renderAllPaths();
+        toggleActionList();
+    }
+}
+
 function switchFullScreen() {
     toggleFullScreen();
     onResize();
 }
 
+
+function checkCloudStatus(targetElement) {
+    $(targetElement).html("未知");
+    $.get(serverAddr + "/ping", function(resp) {
+        if(resp == "Pong") $(targetElement).html("正常");
+        else $(targetElement).html("异常");
+    });
+}
+function startCheckCloudStatus() {
+    var targetElement = document.getElementById("cloud-status-text");
+
+    checkCloudStatus(targetElement);
+
+    setInterval(function() {
+        checkCloudStatus(targetElement);
+    },10000);
+}
+
 window.addEventListener("load",function() {
+    if(isInNode()) {
+        try {
+            loadLocalConfig();
+        } catch(e) {
+            alert(e);
+            window.close();
+        }
+        toggleFullScreen();
+    }
+
+    document.oncontextmenu = function() {
+        return false;
+    };
+
     cvsWidth = $(document).width();
     cvsHeight = $(document).height() - 50;
 
@@ -470,6 +567,7 @@ window.addEventListener("load",function() {
     }
 
     startCheckResize();
+    startCheckCloudStatus();
 });
 
 function drawBegin(e) {
