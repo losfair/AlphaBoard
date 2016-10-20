@@ -53,8 +53,8 @@ body {
     right: 0px;
     z-index: 100;
     background-color: #FFFFFF;
-    opacity: 0.5;
-    -webkit-opacity: 0.5;
+    opacity: 0;
+    -webkit-opacity: 0;
     line-height: 100%;
     text-align: center;
     display: none;
@@ -89,7 +89,9 @@ body {
 #options div {
     line-height: 50px;
     color: #FFFFFF;
-    padding-right: 20px;
+    padding-right: 10px;
+    padding-left: 10px;
+    border-right: 1px solid #999999;
     display: inline;
 }
 
@@ -129,6 +131,12 @@ body {
     color: #FFFFFF;
 }
 
+#action-list-show-paths {
+    margin-top: 15px;
+    font-size: 12px;
+    color: #FFFFFF;
+}
+
 #action-list-show-commits {
     margin-top: 15px;
     font-size: 12px;
@@ -137,6 +145,12 @@ body {
 
 #action-list-load-commit {
     margin-top: 15px;
+    font-size: 12px;
+    color: #FFFFFF;
+}
+
+#path-list-remove-button {
+    margin-top: 30px;
     font-size: 12px;
     color: #FFFFFF;
 }

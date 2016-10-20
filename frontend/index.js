@@ -175,11 +175,16 @@ function resetEverything(noLog) {
     clearCanvas();
 }
 
+function removePath(id) {
+    paths[id] = null;
+}
+
 function renderAllPaths() {
     clearCanvas();
     for(var i in paths) {
         var currPath = paths[i];
         if(!currPath) continue;
+
         if(currPath.type) {
             var currType = currPath.type;
             if(currType == "circle") {
@@ -196,7 +201,9 @@ function renderAllPaths() {
             drawingCxt.lineTo(currPath[j][0],currPath[j][1]);
         }
     }
+
     drawingCxt.stroke();
+
     console.log(paths);
 }
 
@@ -244,6 +251,15 @@ function loadActions(ats, noReset) {
                 switch(currAction.objectType) {
                     case "path":
                         paths.push(currAction.points);
+                        break;
+                    default:
+                        console.log("Unknown object type "+currAction.objectType);
+                }
+                break;
+            case "remove":
+                switch(currAction.objectType) {
+                    case "path":
+                        removePath(currAction.pathId);
                         break;
                     default:
                         console.log("Unknown object type "+currAction.objectType);
@@ -321,6 +337,8 @@ function cancelAction(actionId) {
 }
 
 function commitActions(callback) {
+    $("#last-commit-id").html("...");
+
     $.post(serverAddr+"/commit",JSON.stringify({
         "parentCommit": parentCommit,
         "actions": new_actions
@@ -371,7 +389,14 @@ function toggleActionList() {
         $("#cover-div").unbind("click");
         $("#action-list").fadeOut();
         $("#commit-list").fadeOut();
+        $("#path-list").fadeOut();
         $("#cover-div").fadeOut();
+
+        var pathPreviews = document.getElementsByClassName("path-preview");
+        for(var id = 0; id < pathPreviews.length; id++) {
+            console.log(pathPreviews[id]);
+            if(pathPreviews[id]) document.body.removeChild(pathPreviews[id])
+        };
     }
 }
 
@@ -413,6 +438,17 @@ function updateActionList() {
                         actionDesc += item.objectType;
                 }
                 break;
+            case "remove":
+                actionDesc = "移除";
+                switch(item.objectType) {
+                    case "path":
+                        if(item.hasOwnProperty("desc")) actionDesc += item.desc;
+                        else actionDesc += "路径";
+                        break;
+                    default:
+                        actionDesc += item.objectType;
+                }
+                break;
             case "reset":
                 actionDesc = "重置";
                 break;
@@ -444,6 +480,100 @@ function showCommitList() {
     updateCommitList();
     $("#action-list").fadeOut();
     $("#commit-list").fadeIn();
+}
+
+function removeSelectedPaths() {
+    var items = document.getElementsByClassName("path-list-item");
+    var pathList = document.getElementById("path-list-content");
+
+    console.log(items);
+
+    for(var id in items) {
+        var item = items[id];
+        console.log(item);
+        if(item.isSelected) {
+            addAction("remove","path",{
+                "pathId": item.pathId
+            });
+            removePath(item.pathId);
+            pathList.removeChild(item);
+            if(item.previewCanvas) document.body.removeChild(item.previewCanvas);
+        }
+    }
+
+    renderAllPaths();
+}
+
+function createPathPreview(path) {
+    coverLayer = document.createElement("canvas");
+    coverLayer.className = "path-preview";
+    coverLayer.width = $(document).width();
+    coverLayer.height = $(document).height() - 50;
+
+    $(coverLayer).css("position","fixed");
+    $(coverLayer).css("top","0px");
+    $(coverLayer).css("bottom","50px");
+    $(coverLayer).css("left","0px");
+    $(coverLayer).css("right","0px");
+
+    coverCxt = coverLayer.getContext("2d");
+    coverCxt.fillStyle = "#FF0000";
+    coverCxt.strokeStyle = "#FF0000";
+
+    coverCxt.lineWidth = lineWidth;
+
+    coverCxt.moveTo(path[0][0], path[0][1]);
+
+    for(var i=1; i<path.length; i++) {
+        coverCxt.lineTo(path[i][0],path[i][1]);
+    }
+
+    coverCxt.stroke();
+
+    document.body.appendChild(coverLayer);
+
+    return coverLayer;
+}
+
+function updatePathList() {
+    var pathList = document.getElementById("path-list-content");
+
+    pathList.innerHTML = "";
+
+    for(var id = paths.length - 1; id >= 0; id--) {
+        var item = paths[id];
+        if(!item) continue;
+
+        var newElement = document.createElement("tr");
+        newElement.pathId = id;
+        newElement.className = "path-list-item";
+        newElement.innerHTML = "路径 " + id.toString();
+
+        if(item.hasOwnProperty("type")) newElement.innerHTML += " [" + item.type + "]";
+        else newElement.innerHTML += " 共 "+item.length+" 个节点";
+
+        $(newElement).click(function(e) {
+            if(e.target.isSelected) {
+                $(e.target).css("background","none");
+                $(e.target).css("color","#FFFFFF");
+                e.target.isSelected = false;
+                if(e.target.previewCanvas) document.body.removeChild(e.target.previewCanvas);
+            } else {
+                $(e.target).css("background-color","#FFFFFF");
+                $(e.target).css("color","#000000");
+                e.target.isSelected = true;
+                e.target.previewCanvas = createPathPreview(paths[e.target.pathId]);
+            }
+        });
+
+        pathList.appendChild(newElement);
+    }
+}
+
+function showPathList() {
+    updatePathList();
+    $("#action-list").fadeOut();
+    $("#path-list").fadeIn();
 }
 
 function updateCommitList() {
@@ -608,7 +738,7 @@ function drawBegin(e) {
 
     $(coverLayer).css("position","fixed");
     $(coverLayer).css("top","0px");
-    $(coverLayer).css("bottom","0px");
+    $(coverLayer).css("bottom","50px");
     $(coverLayer).css("left","0px");
     $(coverLayer).css("right","0px");
 

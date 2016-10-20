@@ -28,13 +28,19 @@
             <div id="action-list-title" class="sidebar-title">操作列表</div>
             <table id="action-list-content" class="sidebar-content"></table>
             <div id="action-list-cancel-button" onclick="cancelActionsInList()">撤销操作</div>
-            <div id="action-list-show-commits" onclick="showCommitList()">显示提交列表</div>
+            <div id="action-list-show-commits" onclick="showCommitList()">提交列表</div>
+            <div id="action-list-show-paths" onclick="showPathList()">路径列表</div>
             <div id="action-list-load-commit" onclick="promptForLoadCommit()">加载提交</div>
         </div>
         <div id="commit-list" class="sidebar">
             <div id="commit-list-title" class="sidebar-title">提交记录</div>
             <table id="commit-list-content" class="sidebar-content"></table>
             <div id="commit-list-goto-button" onclick="">回滚提交</div>
+        </div>
+        <div id="path-list" class="sidebar">
+            <div id="path-list-title" class="sidebar-title">路径</div>
+            <table id="path-list-content" class="sidebar-content"></table>
+            <div id="path-list-remove-button" onclick="removeSelectedPaths()">移除</div>
         </div>
         <div id="cover-div"></div>
     </body>
