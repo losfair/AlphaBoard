@@ -514,6 +514,9 @@ function switchFullScreen() {
     onResize();
 }
 
+function showAboutInfo() {
+    showPopup("<pre>AlphaBoard nightly-20161020\n\nCopyright &copy; 2016 Heyang Zhou.\nLicensed under LGPL v3.</pre>");
+}
 
 function checkCloudStatus(targetElement) {
     $(targetElement).html("未知");
@@ -581,7 +584,7 @@ function drawBegin(e) {
 
     var foundStickingTarget = false;
 
-    if(isSticky) {
+    if(isSticky && lineMode != "any") {
         for(var i in paths) {
             var currPath = paths[i];
             for(var j in currPath) {
@@ -634,7 +637,7 @@ function drawEnd() {
 
     var foundStickingTarget = false;
 
-    if(isSticky) {
+    if(isSticky && lineMode != "any") {
         for(var i in paths) {
             var currPath = paths[i];
             for(var j in currPath) {
