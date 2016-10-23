@@ -1,3 +1,5 @@
+frontend-service/
+frontend-dist/
 SAE-Python/
 windows-dist/
 *.zip

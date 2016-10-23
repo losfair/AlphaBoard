@@ -26,6 +26,10 @@ var stickyRadius = 20;
 var coverLayer;
 var coverCxt;
 
+var enableNodeExtensions = false;
+
+const localServiceAddr = "http://127.0.0.1:9021";
+
 var serverAddr = "http://192.168.2.107:6095";
 
 function isInNode() {
@@ -540,7 +544,7 @@ function updatePathList() {
 
     pathList.innerHTML = "";
 
-    for(var id = paths.length - 1; id >= 0; id--) {
+    for(var id = paths.length - 1; id >= 0 && id >= paths.length - 15; id--) {
         var item = paths[id];
         if(!item) continue;
 
@@ -645,7 +649,15 @@ function switchFullScreen() {
 }
 
 function showAboutInfo() {
-    showPopup("<pre>AlphaBoard nightly-20161020\n\nCopyright &copy; 2016 Heyang Zhou.\nLicensed under LGPL v3.</pre>");
+    var aboutInfo = "AlphaBoard nightly-20161020\n\nCopyright &copy; 2016 Heyang Zhou.\nLicensed under LGPL v3.";
+    if(!enableNodeExtensions) showPopup("<pre>"+aboutInfo+"</pre>");
+    else {
+        var request = require("request");
+        request.get(localServiceAddr + "/version", function(err,resp,body) {
+            if(!err) aboutInfo += "\nWith " + body;
+            showPopup("<pre>"+aboutInfo+"</pre>");
+        });
+    }
 }
 
 function checkCloudStatus(targetElement) {
@@ -667,6 +679,7 @@ function startCheckCloudStatus() {
 
 window.addEventListener("load",function() {
     if(isInNode()) {
+        enableNodeExtensions = true;
         try {
             loadLocalConfig();
         } catch(e) {
@@ -717,6 +730,7 @@ function drawBegin(e) {
     if(isSticky && lineMode != "any") {
         for(var i in paths) {
             var currPath = paths[i];
+            if(currPath.length && currPath.length > 5) continue;
             for(var j in currPath) {
                 var pt = currPath[j];
                 if(Math.abs(pt[0] - e.pageX) <= stickyRadius && Math.abs(pt[1] - e.pageY) <= stickyRadius) {
@@ -770,6 +784,7 @@ function drawEnd() {
     if(isSticky && lineMode != "any") {
         for(var i in paths) {
             var currPath = paths[i];
+            if(currPath.length && currPath.length > 5) continue;
             for(var j in currPath) {
                 var pt = currPath[j];
                 if(Math.abs(pt[0] - origX) <= stickyRadius && Math.abs(pt[1] - origY) <= stickyRadius) {
@@ -829,6 +844,48 @@ function drawEnd() {
         addAction("new","path",{
             "points": currentPath
         });
+    }
+
+    if(enableNodeExtensions) {
+        var target_paths_length = paths.length - 1;
+        for(var i = 0; i < target_paths_length; i++) {
+            var p = paths[i];
+            if(!p.length || p.length > 5) continue;
+            for(var j = 0; j < p.length - 1; j++) {
+                var item = [p[j], p[j+1]];
+                if(item[0][0] == item[1][0] && item[0][1] == item[1][1]) continue;
+                (function() {
+                    currentPath = paths[paths.length - 1];
+                    for(var k = 0; k < currentPath.length - 1; k++) {
+                        var lineA = [currentPath[k][0], currentPath[k][1], currentPath[k+1][0], currentPath[k+1][1]];
+                        var lineB = [item[0][0], item[0][1], item[1][0], item[1][1]];
+                        var reqJson = {
+                            "lineA": lineA,
+                            "lineB": lineB
+                        };
+                        var request = require("request");
+                        request.post(localServiceAddr + "/algorithms/get_intersection", {
+                            "form": JSON.stringify(reqJson)
+                        }, function(err,resp,body) {
+                            if(err || !body.length || body[0] != "[") {
+                                return;
+                            }
+
+                            var respData = JSON.parse(body);
+
+                            if(respData[0] < 0 || respData[1] < 0) return;
+
+                            paths.push([respData, respData]);
+
+                            addAction("new","path",{
+                                "desc": "交点",
+                                "points": [respData, respData]
+                            });
+                        });
+                    }
+                })();
+            }
+        }
     }
 
     currentPath = [];
